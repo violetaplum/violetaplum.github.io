@@ -1,48 +1,48 @@
 name: Merge to main workflows
 
-# run when a commit is pushed to "source" branch
 on:
   push:
     branches:
-    - main
+      - main
 
 jobs:
   deploy-to-gh-pages:
     runs-on: ubuntu-latest
     steps:
-    # checkout to the commit that has been pushed
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
-        fetch-depth: 0
+      # checkout to the commit that has been pushed
+      - uses: actions/checkout@v4
+        with:
+          submodules: true  # 테마가 submodule로 있을 경우를 위해
+          fetch-depth: 0    # 전체 git 히스토리 필요
 
-    - name: Setup Hugo
-      uses: peaceiris/actions-hugo@v3.0.0
-      with:
-        hugo-version: 'latest'
-        extended: true
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3.0.0
+        with:
+          hugo-version: 'latest'
+          extended: true
 
-    - name: Update Hugo Modules
-      run: hugo mod tidy
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
+      - name: Setup Hugo Modules and Install Dependencies
+        run: |
+          hugo mod get -u
+          hugo mod tidy
+          hugo mod npm pack
+          npm install
 
-    - name: Install node modules
-      run: |
-        hugo mod get -u
-        hugo mod npm pack
-        npm install
+      - name: Build and Check
+        run: |
+          hugo --minify
+          echo "Generated files in public directory:"
+          ls -la public/
 
-    - name: Build
-      run: hugo --minify
-
-    # push the generated content into the `gh-pages` branch.
-    - name: Deploy
-      uses: peaceiris/actions-gh-pages@v3.0.0
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_branch: gh-pages
-        publish_dir: ./public
+      # push the generated content into the `gh-pages` branch.
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./public
