@@ -17,8 +17,7 @@ module:
   - source: ./node_modules/katex/dist/fonts
     target: static/fonts
 
-# Manage languages
-# For any more details, you can check the official documentation: https://gohugo.io/content-management/multilingual/
+
 languages:
   en:
     languageCode: en
