@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600">
+    <!-- 배경 -->
+    <rect width="1000" height="600" fill="#f8fafc"/>
+
+    <!-- 제목 -->
+    <text x="500" y="50" text-anchor="middle" font-size="24" font-weight="bold" fill="#1e293b">Mockgen vs Mockery 워크플로우</text>
+
+    <!-- 왼쪽: Mockgen -->
+    <g transform="translate(100, 100)">
+        <!-- Mockgen 타이틀 -->
+        <rect x="0" y="0" width="350" height="60" rx="8" fill="#3b82f6"/>
+        <text x="175" y="37" text-anchor="middle" font-size="24" fill="white" font-weight="bold">Mockgen</text>
+
+        <!-- Mockgen 프로세스 -->
+        <g transform="translate(25, 80)">
+            <!-- Source Code -->
+            <rect x="0" y="0" width="300" height="50" rx="6" fill="#60a5fa" opacity="0.9"/>
+            <text x="150" y="30" text-anchor="middle" fill="white">Source Code</text>
+            <!-- Arrow -->
+            <path d="M150,50 L150,80" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+            <!-- AST Parsing -->
+            <rect x="0" y="80" width="300" height="50" rx="6" fill="#60a5fa" opacity="0.9"/>
+            <text x="150" y="110" text-anchor="middle" fill="white">AST Parsing</text>
+            <!-- Arrow -->
+            <path d="M150,130 L150,160" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+            <!-- Code Analysis -->
+            <rect x="0" y="160" width="300" height="50" rx="6" fill="#60a5fa" opacity="0.9"/>
+            <text x="150" y="190" text-anchor="middle" fill="white">Code Analysis</text>
+            <!-- Arrow -->
+            <path d="M150,210 L150,240" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+            <!-- Mock Generation -->
+            <rect x="0" y="240" width="300" height="50" rx="6" fill="#60a5fa" opacity="0.9"/>
+            <text x="150" y="270" text-anchor="middle" fill="white">Mock Generation</text>
+        </g>
+
+        <!-- Features -->
+        <g transform="translate(25, 400)">
+            <!-- Features Box -->
+            <rect x="0" y="0" width="300" height="150" rx="8" fill="#bfdbfe" opacity="0.3"/>
+            <text x="20" y="30" fill="#1e40af" font-weight="bold">주요 특징:</text>
+            <!-- Feature List -->
+            <text x="30" y="60" fill="#1e40af">• Google 공식 지원</text>
+            <text x="30" y="90" fill="#1e40af">• 빠른 실행 속도</text>
+            <text x="30" y="120" fill="#1e40af">• 간단한 설정</text>
+        </g>
+    </g>
+
+    <!-- 오른쪽: Mockery -->
+    <g transform="translate(550, 100)">
+        <!-- Mockery 타이틀 -->
+        <rect x="0" y="0" width="350" height="60" rx="8" fill="#8b5cf6"/>
+        <text x="175" y="37" text-anchor="middle" font-size="24" fill="white" font-weight="bold">Mockery</text>
+
+        <!-- Mockery 프로세스 -->
+        <g transform="translate(25, 80)">
+            <!-- Source Code -->
+            <rect x="0" y="0" width="300" height="50" rx="6" fill="#a78bfa" opacity="0.9"/>
+            <text x="150" y="30" text-anchor="middle" fill="white">Source Code</text>
+            <!-- Arrow -->
+            <path d="M150,50 L150,80" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+            <!-- Template Processing -->
+            <rect x="0" y="80" width="300" height="50" rx="6" fill="#a78bfa" opacity="0.9"/>
+            <text x="150" y="110" text-anchor="middle" fill="white">Template Processing</text>
+            <!-- Arrow -->
+            <path d="M150,130 L150,160" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+            <!-- Custom Logic -->
+            <rect x="0" y="160" width="300" height="50" rx="6" fill="#a78bfa" opacity="0.9"/>
+            <text x="150" y="190" text-anchor="middle" fill="white">Custom Logic</text>
+            <!-- Arrow -->
+            <path d="M150,210 L150,240" stroke="#94a3b8" stroke-width="3" marker-end="url(#arrowhead)"/>
+
+            <!-- Mock Generation -->
+            <rect x="0" y="240" width="300" height="50" rx="6" fill="#a78bfa" opacity="0.9"/>
+            <text x="150" y="270" text-anchor="middle" fill="white">Mock Generation</text>
+        </g>
+
+        <!-- Features -->
+        <g transform="translate(25, 400)">
+            <!-- Features Box -->
+            <rect x="0" y="0" width="300" height="150" rx="8" fill="#ddd6fe" opacity="0.3"/>
+            <text x="20" y="30" fill="#5b21b6" font-weight="bold">주요 특징:</text>
+            <!-- Feature List -->
+            <text x="30" y="60" fill="#5b21b6">• 템플릿 커스터마이징</text>
+            <text x="30" y="90" fill="#5b21b6">• Expecter 패턴 지원</text>
+            <text x="30" y="120" fill="#5b21b6">• 다양한 설정 옵션</text>
+        </g>
+    </g>
+
+    <!-- Arrow Marker Definition -->
+    <defs>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+        </marker>
+    </defs>
+</svg>
