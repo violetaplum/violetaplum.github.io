@@ -35,9 +35,13 @@ jobs:
 
       - name: Build and Check
         run: |
-          hugo --minify
-          echo "Generated files in public directory:"
+          hugo -D --minify
+          echo "=== Checking public directory structure ==="
           ls -la public/
+          echo "=== Checking public directory contents ==="
+          find public/ -type f
+          echo "=== Checking themes ==="
+          ls -la themes/
 
       # push the generated content into the `gh-pages` branch.
       - name: Deploy
