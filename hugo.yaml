@@ -1,7 +1,7 @@
-baseURL: https://hugo-toha.github.io
+baseURL: https://violetaplum.github.io
 
-languageCode: bn
-title: "John's Blog"
+languageCode: en
+title: "Violetaplum's Blog"
 
 # Use Hugo modules to add theme
 module:
@@ -19,16 +19,16 @@ module:
 
 
 languages:
+  ko:
+    languageCode: ko
+    languageName: Korean
+    title: "Violetaplum's Blog"
+    weight: 2
   en:
     languageCode: en
     languageName: English
-    title: "John's Blog"
+    title: "Violetaplum's Blog"
     weight: 1
-  bn:
-    languageCode: bn
-    languageName: বাংলা
-    title: জনের ব্লগ
-    weight: 2
 # default language for the content
 defaultContentLanguage: en
 

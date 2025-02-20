@@ -13,8 +13,8 @@ contactInfo:
 
 # some summary about what you do
 summary:
-  - I am a Developer
-  - I am a Devops
-  - I love servers
-  - I work on open-source projects
-  - I love to work with some fun projects
+  - SELECT * FROM developers WHERE nerd_level = 'OVER_9000';
+  - Greetings, bug hunters and coffee addicts
+  - /* Hello to all you beautiful nerds */
+  - Hello, fellow code nerds
+  - "Hey there, { type: 'genius-weirdos' }"
