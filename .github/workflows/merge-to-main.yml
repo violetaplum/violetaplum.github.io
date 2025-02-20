@@ -12,6 +12,9 @@ jobs:
     steps:
     # checkout to the commit that has been pushed
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+        fetch-depth: 0
 
     - name: Setup Hugo
       uses: peaceiris/actions-hugo@v3.0.0
@@ -29,6 +32,7 @@ jobs:
 
     - name: Install node modules
       run: |
+        hugo mod get -u
         hugo mod npm pack
         npm install
 
