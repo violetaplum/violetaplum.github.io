@@ -35,7 +35,7 @@ jobs:
 
       - name: Build and Check
         run: |
-          hugo -D --minify
+          hugo build -D
           echo "Generated files in public directory:"
           ls -la public/
 
