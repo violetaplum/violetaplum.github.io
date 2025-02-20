@@ -26,7 +26,7 @@ mermaid: true
 mockgen은 AST(Abstract Syntax Tree) 파싱을 기반으로 동작하며, 다음과 같은 아키텍처적 특징을 가집니다:
 
 1. **코드 생성 프로세스**
-   ```go
+   ```
    // mockgen의 일반적인 워크플로우
    source code -> AST parsing -> type analysis -> code generation
    ```
@@ -47,7 +47,7 @@ mockgen은 AST(Abstract Syntax Tree) 파싱을 기반으로 동작하며, 다음
 mockery는 더 유연한 템플릿 기반 접근 방식을 채택했습니다:
 
 1. **코드 생성 프로세스**
-   ```go
+   ```
    // mockery의 워크플로우
    source code -> type parsing -> template rendering -> code generation
    ```
@@ -69,7 +69,7 @@ mockery는 더 유연한 템플릿 기반 접근 방식을 채택했습니다:
 ### 대규모 마이크로서비스 환경
 
 1. **서비스 간 통신 모킹**
-   ```go
+   ```
    // mockgen 사용 시
    type GRPCClient interface {
        Send(ctx context.Context, req *pb.Request) (*pb.Response, error)
@@ -82,7 +82,7 @@ mockery는 더 유연한 템플릿 기반 접근 방식을 채택했습니다:
    ```
 
 2. **데이터베이스 트랜잭션 처리**
-   ```go
+   ```
    // 복잡한 트랜잭션 시나리오에서의 모킹
    type TxManager interface {
        BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
@@ -125,7 +125,7 @@ mockery:
    ```
 
 2. **에러 처리와 디버깅**
-   ```go
+   ```
    // mockgen의 에러 출력
    "Unexpected call to ..."
    
