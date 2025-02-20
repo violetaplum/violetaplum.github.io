@@ -13,7 +13,7 @@ mermaid: true
 
 
 
-# mockgen vs mockery: Go 백엔드 개발자를 위한 심층 분석
+# mockgen vs mockery: Go 백엔드 기술선택 가이드
 
 ## 들어가며
 
