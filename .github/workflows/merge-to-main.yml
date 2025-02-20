@@ -35,7 +35,7 @@ jobs:
 
       - name: Build and Check
         run: |
-          hugo build -D
+          hugo server
           echo "Generated files in public directory:"
           ls -la public/
 
