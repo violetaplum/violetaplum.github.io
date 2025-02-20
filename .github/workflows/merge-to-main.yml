@@ -35,14 +35,15 @@ jobs:
 
       - name: Build and Check
         run: |
-          hugo server
+          hugo --minify
           echo "Generated files in public directory:"
           ls -la public/
 
       # push the generated content into the `gh-pages` branch.
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3.0.0
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./public
+          force_orphan: true
