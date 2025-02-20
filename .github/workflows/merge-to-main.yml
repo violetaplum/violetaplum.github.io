@@ -40,8 +40,6 @@ jobs:
           ls -la public/
           echo "=== Checking public directory contents ==="
           find public/ -type f
-          echo "=== Checking themes ==="
-          ls -la themes/
 
       # push the generated content into the `gh-pages` branch.
       - name: Deploy
@@ -50,4 +48,6 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./public
+          full_commit_message: ${{ github.event.head_commit.message }}
+          enable_jekyll: false
           force_orphan: true
