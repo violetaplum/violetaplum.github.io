@@ -41,17 +41,21 @@ CQRS(Command Query Responsibility Segregation)와 Event Sourcing 패턴에 관�
 
 ```mermaid
 flowchart LR
-    UserRequest["사용자 요청"] --> AccountAPI["Account API"]
-    AccountAPI --> EventGeneration["이벤트 생성"]
-    EventGeneration --> Kafka["Kafka"]
-    Kafka --> EventProcessor["Event Processor"]
-    EventProcessor --> ModelUpdate["조회 모델 업데이트"]
+    User("사용자 요청") --> API("Account API") --> Event("이벤트 생성") --> Kafka("Kafka") --> Processor("Event Processor") --> Update("조회 모델 업데이트")
     
-    EventGeneration -.-> EventStore["이벤트 저장\n(PostgreSQL)"]
-    ModelUpdate -.-> ReadModel["이벤트 읽기\n(PostgreSQL)"]
+    Event --> Store[("이벤트 저장 (PostgreSQL)")]
+    Store -->|"                                          "| Read[("이벤트 읽기 (PostgreSQL)")]
+    Update --> Read
     
-    classDef korean fill:#f9f9f9,stroke:#333,stroke-width:1px
-    class UserRequest,EventGeneration,ModelUpdate,EventStore,ReadModel korean
+    %% 스타일 정의
+    classDef process fill:#6CB4EE,stroke:#0047AB,color:white,font-weight:bold,border-radius:10px,padding:10px
+    classDef database fill:#F5F5F5,stroke:#4F4F4F,stroke-width:2px,color:#4F4F4F,font-weight:bold
+    classDef kafka fill:#FF6B6B,stroke:#C71F37,color:white,font-weight:bold,border-radius:10px,padding:10px
+    
+    %% 스타일 적용
+    class User,API,Event,Processor,Update process
+    class Store,Read database
+    class Kafka kafka
 ```
 
 ## 도메인 설계
