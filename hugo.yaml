@@ -210,7 +210,6 @@ params:
     flowchart:
       enable: true
       services:
-        # Uncomment for `mermaid` shortcode.
         mermaid:
           # For config options, see: https://mermaid-js.github.io/mermaid/#/Setup?id=configuration
           theme: forest
