@@ -15,7 +15,7 @@ categories: ["Backend Development", "Architecture"]
 
 ## 소개
 
-백엔드 개발자로서 5년 차를 맞이하면서, 이론적으로만 접했던 여러 아키텍처 패턴들을 실제로 적용해보고 싶었습니다. 특히 CQRS(Command Query Responsibility Segregation)와 Event Sourcing 패턴에 관심이 많았는데, 이번 토이 프로젝트를 통해 이 두 패턴을 함께 구현해 보았습니다. 간단한 뱅킹 서비스를 예시로 삼아, Go 언어로 개발하고 Kafka, PostgreSQL, OpenTelemetry와 같은 현대적인 기술 스택을 활용했습니다.
+CQRS(Command Query Responsibility Segregation)와 Event Sourcing 패턴에 관심이 많았는데, 이번 토이 프로젝트를 통해 이 두 패턴을 함께 구현해 보았다. '초' 간단한 뱅킹 서비스를 예시로 삼아, Go 언어로 개발하고 Kafka, PostgreSQL, OpenTelemetry와 같은 현대적인 기술 스택을 사용 해보았다.
 
 ## 프로젝트 아키텍처
 
@@ -24,18 +24,34 @@ categories: ["Backend Development", "Architecture"]
 1. **Account API**: 계좌 생성, 입금, 출금 등의 명령(Command)을 처리하는 서비스
 2. **Event Processor**: 이벤트를 소비하고 조회(Query) 모델을 업데이트하는 서비스
 3. **Postgres**: 이벤트 저장소 및 조회 모델 데이터베이스
-4. **Kafka**: 이벤트 메시징 시스템
+4. **Kafka**: 이벤트 메시징 시스템 (분산 처리)
 5. **OpenTelemetry**: 분산 추적 및 모니터링 시스템
-6. **Jaeger**: 트레이싱 데이터 시각화
+6. **Jaeger**: 트레이싱 데이터 시각화 (UI 용도)
 
-전체 아키텍처는 다음과 같은 흐름으로 동작합니다:
+전체 아키텍처는 다음과 같은 흐름으로 동작한다:
 
-```
+``` 
 사용자 요청 -> Account API -> 이벤트 생성 -> Kafka -> Event Processor -> 조회 모델 업데이트
                       |                                     |
                       v                                     v
                   이벤트 저장 -------------------------> 이벤트 읽기
                   (PostgreSQL)                        (PostgreSQL)
+```
+
+
+```mermaid
+flowchart LR
+    UserRequest["사용자 요청"] --> AccountAPI["Account API"]
+    AccountAPI --> EventGeneration["이벤트 생성"]
+    EventGeneration --> Kafka["Kafka"]
+    Kafka --> EventProcessor["Event Processor"]
+    EventProcessor --> ModelUpdate["조회 모델 업데이트"]
+    
+    EventGeneration -.-> EventStore["이벤트 저장\n(PostgreSQL)"]
+    ModelUpdate -.-> ReadModel["이벤트 읽기\n(PostgreSQL)"]
+    
+    classDef korean fill:#f9f9f9,stroke:#333,stroke-width:1px
+    class UserRequest,EventGeneration,ModelUpdate,EventStore,ReadModel korean
 ```
 
 ## 도메인 설계
