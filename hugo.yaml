@@ -212,7 +212,7 @@ params:
       services:
         mermaid:
           # For config options, see: https://mermaid-js.github.io/mermaid/#/Setup?id=configuration
-          theme: forest
+          theme: default
 
     # Enable this to create mathematic expressions using `$$` blocks
     math:
