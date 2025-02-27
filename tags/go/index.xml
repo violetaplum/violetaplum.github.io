@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Go on Violetaplum's Blog</title><link>https://violetaplum.github.io/tags/go/</link><description>Recent content in Go on Violetaplum's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><lastBuildDate>Thu, 27 Feb 2025 09:00:00 +0900</lastBuildDate><atom:link href="https://violetaplum.github.io/tags/go/index.xml" rel="self" type="application/rss+xml"/><item><title>Event-Driven 뱅킹 서비스 구현하기: Go와 CQRS 패턴</title><link>https://violetaplum.github.io/posts/event-driven-account/</link><pubDate>Thu, 27 Feb 2025 09:00:00 +0900</pubDate><guid>https://violetaplum.github.io/posts/event-driven-account/</guid><description>&lt;h2 id="소개">소개&lt;/h2>
+&lt;p>CQRS(Command Query Responsibility Segregation)와 Event Sourcing 패턴에 관심이 많았는데, 이번 토이 프로젝트를 통해 이 두 패턴을 함께 구현해 봤다. &amp;lsquo;초&amp;rsquo; 간단한 뱅킹 서비스를 예시로 삼아, Go 언어로 개발하고 Kafka, PostgreSQL, OpenTelemetry와 같은 현대적인 기술 스택을 사용해 봤다.&lt;/p>
+&lt;h2 id="프로젝트-아키텍처">프로젝트 아키텍처&lt;/h2>
+&lt;p>이 프로젝트는 크게 다음과 같은 컴포넌트로 구성되어 있다:&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>Account API&lt;/strong>: 계좌 생성, 입금, 출금 등의 명령(Command)을 처리하는 서비스&lt;/li>
+&lt;li>&lt;strong>Event Processor&lt;/strong>: 이벤트를 소비하고 조회(Query) 모델을 업데이트하는 서비스&lt;/li>
+&lt;li>&lt;strong>Postgres&lt;/strong>: 이벤트 저장소 및 조회 모델 데이터베이스&lt;/li>
+&lt;li>&lt;strong>Kafka&lt;/strong>: 이벤트 메시징 시스템 (분산 처리)&lt;/li>
+&lt;li>&lt;strong>OpenTelemetry&lt;/strong>: 분산 추적 및 모니터링 시스템&lt;/li>
+&lt;li>&lt;strong>Jaeger&lt;/strong>: 트레이싱 데이터 시각화 (UI 용도)&lt;/li>
+&lt;/ol>
+&lt;p>전체 아키텍처는 다음과 같은 흐름으로 동작한다:&lt;/p></description></item></channel></rss>

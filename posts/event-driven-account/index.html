@@ -1,0 +1,392 @@
+<!doctype html><html lang=en><head><title>Event-Driven 뱅킹 서비스 구현하기: Go와 CQRS 패턴</title>
+<meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="ie=edge"><link rel=stylesheet href=/application.34793ea3875bfaaa88436c36fa80f08bc736978d47b512f83f32b8acbae3a603.css integrity="sha256-NHk+o4db+qqIQ2w2+oDwi8c2l41HtRL4PzK4rLrjpgM="><link rel=icon type=image/png href=/images/site/favicon_hu_a7920c91965714cb.png><meta property="og:url" content="https://violetaplum.github.io/posts/event-driven-account/"><meta property="og:site_name" content="Violetaplum's Blog"><meta property="og:title" content="Event-Driven 뱅킹 서비스 구현하기: Go와 CQRS 패턴"><meta property="og:description" content="kafka, opentelemetry controller, jaeger 맛보기"><meta property="og:locale" content="en"><meta property="og:type" content="article"><meta property="article:section" content="posts"><meta property="article:published_time" content="2025-02-27T09:00:00+09:00"><meta property="article:modified_time" content="2025-02-27T09:00:00+09:00"><meta property="article:tag" content="Go"><meta property="article:tag" content="CQRS"><meta property="article:tag" content="Event Sourcing"><meta property="article:tag" content="Kafka"><meta property="article:tag" content="Microservices"><meta property="article:tag" content="OpenTelemetry"><meta name=twitter:card content="summary"><meta name=twitter:title content="Event-Driven 뱅킹 서비스 구현하기: Go와 CQRS 패턴"><meta name=twitter:description content="kafka, opentelemetry controller, jaeger 맛보기"><meta name=description content="kafka, opentelemetry controller, jaeger 맛보기"><script async src="https://www.googletagmanager.com/gtag/js?id=G-H4LBG7NDFZ"></script><script>var dnt,doNotTrack=!1;if(null&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-H4LBG7NDFZ")}</script><script integrity="sha256-DO4ugzEwhTW1Id1UIWn0gUJWaebCYOypeTit6LW4QB4=">let theme=localStorage.getItem("theme-scheme")||localStorage.getItem("darkmode:color-scheme")||"light";theme==="system"&&(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches?theme="dark":theme="light"),document.documentElement.setAttribute("data-theme",theme)</script></head><body class="type-posts kind-page" data-bs-spy=scroll data-bs-target=#TableOfContents data-bs-offset=80><div class="container-fluid bg-secondary wrapper"><nav class="navbar navbar-expand-xl top-navbar shadow" id=top-navbar><div class=container><button class="navbar-toggler navbar-light" id=sidebar-toggler type=button>
+<i data-feather=sidebar></i>
+</button>
+<a class=navbar-brand href=/><img src=/images/site/main-logo_hu_77a6e5ea6e57520b.png id=logo alt=Logo>
+Violetaplum's Blog</a>
+<button class="navbar-toggler navbar-light" id=navbar-toggler type=button data-bs-toggle=collapse data-bs-target=#top-nav-items aria-label=menu>
+<i data-feather=menu></i></button><div class="collapse navbar-collapse dynamic-navbar" id=top-nav-items><ul class="nav navbar-nav ms-auto"><li class=nav-item><a class=nav-link href=/#home>Home</a></li><li class=nav-item><a class=nav-link href=/#about>About</a></li><li class=nav-item><a class=nav-link href=/#skills>Skills</a></li><li class=nav-item><a class=nav-link href=/#experiences>Experiences</a></li><li class=nav-item><a class=nav-link href=/#education>Education</a></li><li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href=# id=navbarDropdown role=button data-bs-toggle=dropdown aria-haspopup=true aria-expanded=false>More</a><div class=dropdown-menu aria-labelledby=navbarDropdown><a class=dropdown-item href=/#projects>Projects</a>
+<a class=dropdown-item href=/#publications>Publications</a>
+<a class=dropdown-item href=/#featured-posts>Featured Posts</a>
+<a class=dropdown-item href=/#recent-posts>Recent Posts</a>
+<a class=dropdown-item href=/#accomplishments>Accomplishments</a>
+<a class=dropdown-item href=/#achievements>Achievements</a></div></li><div id=top-navbar-divider></div><li class=nav-item><a class=nav-link id=blog-link href=/posts>Posts</a></li><li class=nav-item><a class=nav-link id=note-link href=/notes>Notes</a></li><li class=nav-item><a class=nav-link href=https://toha-guides.netlify.app/posts/>Docs</a></li><li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href=# id=themeSelector role=button data-bs-toggle=dropdown aria-haspopup=true aria-expanded=false><img id=navbar-theme-icon-svg class=theme-icon src=/icons/moon-svgrepo-com.svg width=20 alt="Dark Theme"></a><div id=themeMenu class="dropdown-menu dropdown-menu-icons-only" aria-labelledby=themeSelector><a class="dropdown-item nav-link" href=# data-scheme=light><img class=theme-icon src=/icons/sun-svgrepo-com.svg width=20 alt="Light Theme">
+</a><a class="dropdown-item nav-link" href=# data-scheme=dark><img class=theme-icon src=/icons/moon-svgrepo-com.svg width=20 alt="Dark Theme">
+</a><a class="dropdown-item nav-link" href=# data-scheme=system><img class=theme-icon src=/icons/computer-svgrepo-com.svg width=20 alt="System Theme"></a></div></li></ul></div></div><img src=/images/site/main-logo_hu_77a6e5ea6e57520b.png class=d-none id=main-logo alt=Logo>
+<img src=/images/site/inverted-logo_hu_a7920c91965714cb.png class=d-none id=inverted-logo alt="Inverted Logo"></nav><section class=sidebar-section id=sidebar-section><div class=sidebar-holder><div class=sidebar id=sidebar><form class=mx-auto method=get action=/search><input type=text name=keyword placeholder=Search data-search id=search-box></form><div class=sidebar-tree><ul class=tree id=tree><li id=list-heading><a href=/posts/ data-filter=all>Posts</a></li><div class=subtree><li><a class=list-link href=/posts/introduction/ title=Introduction>Introduction</a></li><li><i data-feather=plus-circle></i><a class=list-link href=/posts/category/> Category</a><ul><li><i data-feather=plus-circle></i><a class=list-link href=/posts/category/sub-category/> Sub-Category</a><ul><li><a class=list-link href=/posts/category/sub-category/rich-content/ title="Rich Content">Rich Content</a></li></ul></li></ul></li><li><a class=list-link href=/posts/markdown-sample/ title="Markdown Sample">Markdown Sample</a></li><li><a class="active list-link" href=/posts/event-driven-account/ title="Event-Driven 뱅킹 서비스">Event-Driven 뱅킹 서비스</a></li><li><a class=list-link href=/posts/mockgen-mockery/ title="Mockgen vs Mockery">Mockgen vs Mockery</a></li><li><a class=list-link href=/posts/shortcodes/ title="Shortcodes Sample">Shortcodes Sample</a></li></div></ul></div></div></div></section><section class=content-section id=content-section><div class=content><div class="container p-0 read-area"><div class="hero-area col-sm-12" id=hero-area style=background-image:url(/images/default-hero.jpg)></div><div class=page-content><div class="author-profile ms-auto align-self-lg-center"><img class=rounded-circle src=/images/author/gopher_hu_d0cf57b79ee1ac89.png alt="Author Image"><h5 class=author-name>Violetaplum</h5><p class=text-muted>Thursday, February 27, 2025 | 7 minutes</p></div><div class=title><h1>Event-Driven 뱅킹 서비스 구현하기: Go와 CQRS 패턴</h1></div><div class=tags><ul style=padding-left:0><li class=rounded><a href=/tags/go/ class="btn btn-sm btn-info">Go</a></li><li class=rounded><a href=/tags/cqrs/ class="btn btn-sm btn-info">CQRS</a></li><li class=rounded><a href=/tags/event-sourcing/ class="btn btn-sm btn-info">Event Sourcing</a></li><li class=rounded><a href=/tags/kafka/ class="btn btn-sm btn-info">Kafka</a></li><li class=rounded><a href=/tags/microservices/ class="btn btn-sm btn-info">Microservices</a></li><li class=rounded><a href=/tags/opentelemetry/ class="btn btn-sm btn-info">OpenTelemetry</a></li><li class=rounded><a href=/tags/docker/ class="btn btn-sm btn-info">Docker</a></li></ul></div><div class=post-content id=post-content><h2 id=소개>소개</h2><p>CQRS(Command Query Responsibility Segregation)와 Event Sourcing 패턴에 관심이 많았는데, 이번 토이 프로젝트를 통해 이 두 패턴을 함께 구현해 봤다. &lsquo;초&rsquo; 간단한 뱅킹 서비스를 예시로 삼아, Go 언어로 개발하고 Kafka, PostgreSQL, OpenTelemetry와 같은 현대적인 기술 스택을 사용해 봤다.</p><h2 id=프로젝트-아키텍처>프로젝트 아키텍처</h2><p>이 프로젝트는 크게 다음과 같은 컴포넌트로 구성되어 있다:</p><ol><li><strong>Account API</strong>: 계좌 생성, 입금, 출금 등의 명령(Command)을 처리하는 서비스</li><li><strong>Event Processor</strong>: 이벤트를 소비하고 조회(Query) 모델을 업데이트하는 서비스</li><li><strong>Postgres</strong>: 이벤트 저장소 및 조회 모델 데이터베이스</li><li><strong>Kafka</strong>: 이벤트 메시징 시스템 (분산 처리)</li><li><strong>OpenTelemetry</strong>: 분산 추적 및 모니터링 시스템</li><li><strong>Jaeger</strong>: 트레이싱 데이터 시각화 (UI 용도)</li></ol><p>전체 아키텍처는 다음과 같은 흐름으로 동작한다:</p><pre tabindex=0><code>사용자 요청 -&gt; Account API -&gt; 이벤트 생성 -&gt; Kafka -&gt; Event Processor -&gt; 조회 모델 업데이트
+                      |                                     |
+                      v                                     v
+                  이벤트 저장 -------------------------&gt; 이벤트 읽기
+                  (PostgreSQL)                        (PostgreSQL)
+</code></pre><h2 id=도메인-설계>도메인 설계</h2><p>도메인 설계는 DDD(Domain-Driven Design)의 원칙을 따라 구현했다. 핵심 도메인 객체는 다음과 같다:</p><h3 id=account>Account</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// domain/account.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Account</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>        <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>OwnerName</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Balance</span>   <span style=color:#66d9ef>int64</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>CreatedAt</span> <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Time</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>UpdatedAt</span> <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Time</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>AccountRepository</span> <span style=color:#66d9ef>interface</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Save</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>account</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>Account</span>) <span style=color:#66d9ef>error</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>FindByID</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>id</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>Account</span>, <span style=color:#66d9ef>error</span>)
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// ... 기타 메서드</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=transaction>Transaction</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// domain/transaction.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>TransactionType</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>const</span> (
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Deposit</span>  <span style=color:#a6e22e>TransactionType</span> = <span style=color:#e6db74>&#34;DEPOSIT&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Withdraw</span> <span style=color:#a6e22e>TransactionType</span> = <span style=color:#e6db74>&#34;WITHDRAW&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Transaction</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>          <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>AccountID</span>   <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Amount</span>      <span style=color:#66d9ef>int64</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Type</span>        <span style=color:#a6e22e>TransactionType</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Description</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>CreatedAt</span>   <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Time</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=event>Event</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// domain/event.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>EventType</span> <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>const</span> (
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>AccountCreated</span> <span style=color:#a6e22e>EventType</span> = <span style=color:#e6db74>&#34;ACCOUNT_CREATED&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>MoneyDeposited</span> <span style=color:#a6e22e>EventType</span> = <span style=color:#e6db74>&#34;MONEY_DEPOSITED&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>MoneyWithdrawn</span> <span style=color:#a6e22e>EventType</span> = <span style=color:#e6db74>&#34;MONEY_WITHDRAWN&#34;</span>
+</span></span><span style=display:flex><span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>Event</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ID</span>        <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Type</span>      <span style=color:#a6e22e>EventType</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Data</span>      []<span style=color:#66d9ef>byte</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Timestamp</span> <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Time</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>Version</span>   <span style=color:#66d9ef>int</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=cqrs-패턴-구현>CQRS 패턴 구현</h2><p>CQRS 패턴은 명령(Command)과 조회(Query)의 책임을 분리하는 패턴이다. 이 프로젝트에서는 다음과 같이 구현했다:</p><h3 id=command-서비스>Command 서비스</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// application/command/account_service.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>AccountService</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>accountRepo</span>  <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>AccountRepository</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>eventStore</span>   <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>EventStore</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>eventProducer</span> <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>EventProducer</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AccountService</span>) <span style=color:#a6e22e>CreateAccount</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>ownerName</span> <span style=color:#66d9ef>string</span>) (<span style=color:#66d9ef>string</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 계좌 생성 로직</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>account</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>Account</span>{
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>ID</span>:        <span style=color:#a6e22e>uuid</span>.<span style=color:#a6e22e>New</span>().<span style=color:#a6e22e>String</span>(),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>OwnerName</span>: <span style=color:#a6e22e>ownerName</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Balance</span>:   <span style=color:#ae81ff>0</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>CreatedAt</span>: <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Now</span>(),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>UpdatedAt</span>: <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Now</span>(),
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 이벤트 생성 및 저장</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>event</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>Event</span>{
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>ID</span>:        <span style=color:#a6e22e>uuid</span>.<span style=color:#a6e22e>New</span>().<span style=color:#a6e22e>String</span>(),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Type</span>:      <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>AccountCreated</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Data</span>:      <span style=color:#75715e>// marshal account data</span>
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Timestamp</span>: <span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Now</span>(),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Version</span>:   <span style=color:#ae81ff>1</span>,
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 트랜잭션으로 계좌 및 이벤트 저장</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>accountRepo</span>.<span style=color:#a6e22e>Save</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>account</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;&#34;</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 이벤트 발행</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>err</span> = <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>eventProducer</span>.<span style=color:#a6e22e>Produce</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>event</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#e6db74>&#34;&#34;</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>account</span>.<span style=color:#a6e22e>ID</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=query-서비스>Query 서비스</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// application/query/account_service.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>AccountQueryService</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>accountRepo</span> <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>AccountRepository</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AccountQueryService</span>) <span style=color:#a6e22e>GetAccount</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>id</span> <span style=color:#66d9ef>string</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>Account</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>accountRepo</span>.<span style=color:#a6e22e>FindByID</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>id</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>s</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AccountQueryService</span>) <span style=color:#a6e22e>ListAccounts</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) ([]<span style=color:#f92672>*</span><span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>Account</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>s</span>.<span style=color:#a6e22e>accountRepo</span>.<span style=color:#a6e22e>FindAll</span>(<span style=color:#a6e22e>ctx</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=이벤트-처리-파이프라인>이벤트 처리 파이프라인</h2><p>이벤트 처리 파이프라인은 Kafka를 통해 구현했다. 계좌 서비스에서 생성된 이벤트는 Kafka 토픽에 발행되고, 이벤트 프로세서가 이를 소비하여 조회 모델을 업데이트한다.</p><h3 id=이벤트-프로듀서>이벤트 프로듀서</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// infrastructure/kafka/producer.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>KafkaProducer</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>producer</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Producer</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>topic</span>    <span style=color:#66d9ef>string</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>p</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>KafkaProducer</span>) <span style=color:#a6e22e>Produce</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>, <span style=color:#a6e22e>event</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>Event</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 이벤트 직렬화</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>eventData</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Marshal</span>(<span style=color:#a6e22e>event</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// Kafka 메시지 생성 및 발행</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>message</span> <span style=color:#f92672>:=</span> <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Message</span>{
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>TopicPartition</span>: <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>TopicPartition</span>{
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Topic</span>:     <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>topic</span>,
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>Partition</span>: <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>PartitionAny</span>,
+</span></span><span style=display:flex><span>        },
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Key</span>:   []byte(<span style=color:#a6e22e>event</span>.<span style=color:#a6e22e>ID</span>),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>Value</span>: <span style=color:#a6e22e>eventData</span>,
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 메시지 전송</span>
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>p</span>.<span style=color:#a6e22e>producer</span>.<span style=color:#a6e22e>Produce</span>(<span style=color:#a6e22e>message</span>, <span style=color:#66d9ef>nil</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h3 id=이벤트-컨슈머>이벤트 컨슈머</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// infrastructure/kafka/consumer.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>KafkaConsumer</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>consumer</span>    <span style=color:#f92672>*</span><span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Consumer</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>handlers</span>    <span style=color:#66d9ef>map</span>[<span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>EventType</span>]<span style=color:#a6e22e>EventHandler</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>eventStore</span>  <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>EventStore</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>c</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>KafkaConsumer</span>) <span style=color:#a6e22e>Start</span>(<span style=color:#a6e22e>ctx</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Context</span>) <span style=color:#66d9ef>error</span> {
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>for</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>select</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>case</span> <span style=color:#f92672>&lt;-</span><span style=color:#a6e22e>ctx</span>.<span style=color:#a6e22e>Done</span>():
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>            
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>default</span>:
+</span></span><span style=display:flex><span>            <span style=color:#a6e22e>msg</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>consumer</span>.<span style=color:#a6e22e>ReadMessage</span>(<span style=color:#a6e22e>time</span>.<span style=color:#a6e22e>Second</span>)
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span>.(<span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>Error</span>).<span style=color:#a6e22e>Code</span>() <span style=color:#f92672>==</span> <span style=color:#a6e22e>kafka</span>.<span style=color:#a6e22e>ErrTimedOut</span> {
+</span></span><span style=display:flex><span>                    <span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// 이벤트 역직렬화</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>event</span> <span style=color:#a6e22e>domain</span>.<span style=color:#a6e22e>Event</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>Unmarshal</span>(<span style=color:#a6e22e>msg</span>.<span style=color:#a6e22e>Value</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>event</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>                <span style=color:#75715e>// 에러 처리</span>
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>continue</span>
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            
+</span></span><span style=display:flex><span>            <span style=color:#75715e>// 이벤트 처리</span>
+</span></span><span style=display:flex><span>            <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>handler</span>, <span style=color:#a6e22e>ok</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>handlers</span>[<span style=color:#a6e22e>event</span>.<span style=color:#a6e22e>Type</span>]; <span style=color:#a6e22e>ok</span> {
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>span</span>, <span style=color:#a6e22e>ctx</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>c</span>.<span style=color:#a6e22e>tracer</span>.<span style=color:#a6e22e>Start</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#e6db74>&#34;ProcessEvent&#34;</span>)
+</span></span><span style=display:flex><span>                <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>handler</span>.<span style=color:#a6e22e>Handle</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#f92672>&amp;</span><span style=color:#a6e22e>event</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>                    <span style=color:#75715e>// 에러 처리</span>
+</span></span><span style=display:flex><span>                }
+</span></span><span style=display:flex><span>                <span style=color:#a6e22e>span</span>.<span style=color:#a6e22e>End</span>()
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=opentelemetry를-활용한-분산-추적>OpenTelemetry를 활용한 분산 추적</h2><p>시스템의 모니터링과 디버깅을 위해 OpenTelemetry를 구현했다. 이를 통해 요청의 전체 경로를 추적하고, 각 서비스 간의 연계성을 시각화할 수 있다.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// interface/telemetry/tracer.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> <span style=color:#a6e22e>InitTracer</span>(<span style=color:#a6e22e>serviceName</span> <span style=color:#66d9ef>string</span>, <span style=color:#a6e22e>config</span> <span style=color:#a6e22e>Config</span>) (<span style=color:#f92672>*</span><span style=color:#a6e22e>sdktrace</span>.<span style=color:#a6e22e>TracerProvider</span>, <span style=color:#66d9ef>error</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ctx</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>context</span>.<span style=color:#a6e22e>Background</span>()
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// OTLP 익스포터 설정</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>exporter</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>otlptraceexporter</span>.<span style=color:#a6e22e>New</span>(
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>ctx</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>otlptraceexporter</span>.<span style=color:#a6e22e>WithGRPCEndpoint</span>(<span style=color:#a6e22e>config</span>.<span style=color:#a6e22e>Endpoint</span>),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>otlptraceexporter</span>.<span style=color:#a6e22e>WithInsecure</span>(),
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span> <span style=color:#66d9ef>nil</span>, <span style=color:#a6e22e>err</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 리소스 설정</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>resource</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>resource</span>.<span style=color:#a6e22e>NewWithAttributes</span>(
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>semconv</span>.<span style=color:#a6e22e>SchemaURL</span>,
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>semconv</span>.<span style=color:#a6e22e>ServiceNameKey</span>.<span style=color:#a6e22e>String</span>(<span style=color:#a6e22e>serviceName</span>),
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 트레이서 프로바이더 생성</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>tp</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>sdktrace</span>.<span style=color:#a6e22e>NewTracerProvider</span>(
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>sdktrace</span>.<span style=color:#a6e22e>WithBatcher</span>(<span style=color:#a6e22e>exporter</span>),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>sdktrace</span>.<span style=color:#a6e22e>WithResource</span>(<span style=color:#a6e22e>resource</span>),
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>sdktrace</span>.<span style=color:#a6e22e>WithSampler</span>(<span style=color:#a6e22e>sdktrace</span>.<span style=color:#a6e22e>AlwaysSample</span>()),
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#75715e>// 글로벌 트레이서 등록</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>otel</span>.<span style=color:#a6e22e>SetTracerProvider</span>(<span style=color:#a6e22e>tp</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>otel</span>.<span style=color:#a6e22e>SetTextMapPropagator</span>(<span style=color:#a6e22e>propagation</span>.<span style=color:#a6e22e>NewCompositeTextMapPropagator</span>(
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>propagation</span>.<span style=color:#a6e22e>TraceContext</span>{},
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>propagation</span>.<span style=color:#a6e22e>Baggage</span>{},
+</span></span><span style=display:flex><span>    ))
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>return</span> <span style=color:#a6e22e>tp</span>, <span style=color:#66d9ef>nil</span>
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=http-인터페이스>HTTP 인터페이스</h2><p>RESTful API를 통해 외부 시스템과 통신하며, 미들웨어를 통해 요청 로깅과 트레이싱을 구현했다.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-go data-lang=go><span style=display:flex><span><span style=color:#75715e>// interface/http/account_handler.go (일부)</span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>type</span> <span style=color:#a6e22e>AccountHandler</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>commandService</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>command</span>.<span style=color:#a6e22e>AccountService</span>
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>queryService</span>   <span style=color:#f92672>*</span><span style=color:#a6e22e>query</span>.<span style=color:#a6e22e>AccountQueryService</span>
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>h</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AccountHandler</span>) <span style=color:#a6e22e>RegisterRoutes</span>(<span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>mux</span>.<span style=color:#a6e22e>Router</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>HandleFunc</span>(<span style=color:#e6db74>&#34;/accounts&#34;</span>, <span style=color:#a6e22e>h</span>.<span style=color:#a6e22e>CreateAccount</span>).<span style=color:#a6e22e>Methods</span>(<span style=color:#e6db74>&#34;POST&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>HandleFunc</span>(<span style=color:#e6db74>&#34;/accounts/{id}&#34;</span>, <span style=color:#a6e22e>h</span>.<span style=color:#a6e22e>GetAccount</span>).<span style=color:#a6e22e>Methods</span>(<span style=color:#e6db74>&#34;GET&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>HandleFunc</span>(<span style=color:#e6db74>&#34;/accounts/{id}/deposit&#34;</span>, <span style=color:#a6e22e>h</span>.<span style=color:#a6e22e>Deposit</span>).<span style=color:#a6e22e>Methods</span>(<span style=color:#e6db74>&#34;POST&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>HandleFunc</span>(<span style=color:#e6db74>&#34;/accounts/{id}/withdraw&#34;</span>, <span style=color:#a6e22e>h</span>.<span style=color:#a6e22e>Withdraw</span>).<span style=color:#a6e22e>Methods</span>(<span style=color:#e6db74>&#34;POST&#34;</span>)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#66d9ef>func</span> (<span style=color:#a6e22e>h</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>AccountHandler</span>) <span style=color:#a6e22e>CreateAccount</span>(<span style=color:#a6e22e>w</span> <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>ResponseWriter</span>, <span style=color:#a6e22e>r</span> <span style=color:#f92672>*</span><span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Request</span>) {
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>ctx</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Context</span>()
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>var</span> <span style=color:#a6e22e>req</span> <span style=color:#66d9ef>struct</span> {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>OwnerName</span> <span style=color:#66d9ef>string</span> <span style=color:#e6db74>`json:&#34;ownerName&#34;`</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>NewDecoder</span>(<span style=color:#a6e22e>r</span>.<span style=color:#a6e22e>Body</span>).<span style=color:#a6e22e>Decode</span>(<span style=color:#f92672>&amp;</span><span style=color:#a6e22e>req</span>); <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Error</span>(<span style=color:#a6e22e>w</span>, <span style=color:#a6e22e>err</span>.<span style=color:#a6e22e>Error</span>(), <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>StatusBadRequest</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>id</span>, <span style=color:#a6e22e>err</span> <span style=color:#f92672>:=</span> <span style=color:#a6e22e>h</span>.<span style=color:#a6e22e>commandService</span>.<span style=color:#a6e22e>CreateAccount</span>(<span style=color:#a6e22e>ctx</span>, <span style=color:#a6e22e>req</span>.<span style=color:#a6e22e>OwnerName</span>)
+</span></span><span style=display:flex><span>    <span style=color:#66d9ef>if</span> <span style=color:#a6e22e>err</span> <span style=color:#f92672>!=</span> <span style=color:#66d9ef>nil</span> {
+</span></span><span style=display:flex><span>        <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>Error</span>(<span style=color:#a6e22e>w</span>, <span style=color:#a6e22e>err</span>.<span style=color:#a6e22e>Error</span>(), <span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>StatusInternalServerError</span>)
+</span></span><span style=display:flex><span>        <span style=color:#66d9ef>return</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>Header</span>().<span style=color:#a6e22e>Set</span>(<span style=color:#e6db74>&#34;Content-Type&#34;</span>, <span style=color:#e6db74>&#34;application/json&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>w</span>.<span style=color:#a6e22e>WriteHeader</span>(<span style=color:#a6e22e>http</span>.<span style=color:#a6e22e>StatusCreated</span>)
+</span></span><span style=display:flex><span>    <span style=color:#a6e22e>json</span>.<span style=color:#a6e22e>NewEncoder</span>(<span style=color:#a6e22e>w</span>).<span style=color:#a6e22e>Encode</span>(<span style=color:#66d9ef>map</span>[<span style=color:#66d9ef>string</span>]<span style=color:#66d9ef>string</span>{<span style=color:#e6db74>&#34;id&#34;</span>: <span style=color:#a6e22e>id</span>})
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><h2 id=docker-구성>Docker 구성</h2><p>프로젝트의 배포를 위해 Docker와 Docker Compose를 사용했다. 멀티 스테이지 빌드를 통해 경량화된 이미지를 생성하고, 의존성 관리를 간소화했다.</p><h3 id=dockerfile>Dockerfile</h3><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-dockerfile data-lang=dockerfile><span style=display:flex><span><span style=color:#66d9ef>FROM</span><span style=color:#e6db74> golang:1.22-alpine AS builder</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>WORKDIR</span><span style=color:#e6db74> /app</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> apk add --no-cache <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    git <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    librdkafka-dev <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    pkgconfig <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    build-base <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    bash <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    gcc <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    musl-dev <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    linux-headers <span style=color:#ae81ff>\
+</span></span></span><span style=display:flex><span><span style=color:#ae81ff></span>    libc-dev<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>COPY</span> . .<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> go mod download<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#75715e># http router 테스트 실행</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> go test -v ./...<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#75715e># CGO_ENABLED=1을 명시적으로 설정하고, 빌드 시 추가 플래그 사용</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> CGO_ENABLED<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> GOOS<span style=color:#f92672>=</span>linux go build -tags musl -o account ./cmd/account/main.go<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> CGO_ENABLED<span style=color:#f92672>=</span><span style=color:#ae81ff>1</span> GOOS<span style=color:#f92672>=</span>linux go build -tags musl -o event ./cmd/event/main.go<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>FROM</span><span style=color:#e6db74> alpine:3.18 AS account-app</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> apk add --no-cache librdkafka-dev<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>WORKDIR</span><span style=color:#e6db74> /app</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>COPY</span> --from<span style=color:#f92672>=</span>builder /app/account /account<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>EXPOSE</span><span style=color:#e6db74> 8080</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>CMD</span> [<span style=color:#e6db74>&#34;/account&#34;</span>]<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>FROM</span><span style=color:#e6db74> alpine:3.18 AS event-app</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>RUN</span> apk add --no-cache librdkafka-dev<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>WORKDIR</span><span style=color:#e6db74> /app</span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>COPY</span> --from<span style=color:#f92672>=</span>builder /app/event /event<span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010>
+</span></span></span><span style=display:flex><span><span style=color:#960050;background-color:#1e0010></span><span style=color:#66d9ef>CMD</span> [<span style=color:#e6db74>&#34;/event&#34;</span>]<span style=color:#960050;background-color:#1e0010>
+</span></span></span></code></pre></div><h3 id=docker-compose>Docker Compose</h3><p>Docker Compose를 통해 모든 서비스를 한 번에 실행하고 관리할 수 있다.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-yaml data-lang=yaml><span style=display:flex><span><span style=color:#f92672>services</span>:
+</span></span><span style=display:flex><span>  <span style=color:#f92672>postgres</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>postgres:latest</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>environment</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>POSTGRES_DB</span>: <span style=color:#ae81ff>eventstore</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>POSTGRES_USER</span>: <span style=color:#ae81ff>user</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>POSTGRES_PASSWORD</span>: <span style=color:#ae81ff>password</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>ports</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;5432:5432&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>volumes</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#ae81ff>./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>healthcheck</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>test</span>: [<span style=color:#e6db74>&#34;CMD-SHELL&#34;</span>, <span style=color:#e6db74>&#34;pg_isready -U user -d eventstore&#34;</span>]
+</span></span><span style=display:flex><span>      <span style=color:#f92672>interval</span>: <span style=color:#ae81ff>5s</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>timeout</span>: <span style=color:#ae81ff>5s</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>retries</span>: <span style=color:#ae81ff>5</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>image</span>: <span style=color:#ae81ff>confluentinc/cp-kafka:latest</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>environment</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_PROCESS_ROLES</span>: <span style=color:#e6db74>&#39;broker,controller&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_NODE_ID</span>: <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_CONTROLLER_QUORUM_VOTERS</span>: <span style=color:#e6db74>&#39;1@kafka:29093&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_LISTENERS</span>: <span style=color:#e6db74>&#39;PLAINTEXT://kafka:9092,CONTROLLER://kafka:29093&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_ADVERTISED_LISTENERS</span>: <span style=color:#e6db74>&#39;PLAINTEXT://kafka:9092&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_LISTENER_SECURITY_PROTOCOL_MAP</span>: <span style=color:#e6db74>&#39;CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_CONTROLLER_LISTENER_NAMES</span>: <span style=color:#e6db74>&#39;CONTROLLER&#39;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR</span>: <span style=color:#ae81ff>1</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>CLUSTER_ID</span>: <span style=color:#e6db74>&#39;ciWo7IWazngRchmPES6q5A==&#39;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>ports</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;9092:9092&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>healthcheck</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>test</span>: [<span style=color:#e6db74>&#34;CMD-SHELL&#34;</span>, <span style=color:#e6db74>&#34;kafka-topics --bootstrap-server kafka:9092 --list&#34;</span>]
+</span></span><span style=display:flex><span>      <span style=color:#f92672>interval</span>: <span style=color:#ae81ff>5s</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>timeout</span>: <span style=color:#ae81ff>5s</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>retries</span>: <span style=color:#ae81ff>5</span>
+</span></span><span style=display:flex><span>    <span style=color:#75715e># ... 이하 생략 ...</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>account-api</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>build</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>context</span>: <span style=color:#ae81ff>..</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>dockerfile</span>: <span style=color:#ae81ff>deployments/app/Dockerfile</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>target</span>: <span style=color:#ae81ff>account-app</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>depends_on</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>postgres</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_healthy</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_started</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>otel-collector</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_started</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>environment</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_HOST</span>: <span style=color:#ae81ff>postgres</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_NAME</span>: <span style=color:#ae81ff>user</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_PASSWORD</span>: <span style=color:#ae81ff>password</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_BROKERS</span>: <span style=color:#ae81ff>kafka:9092</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_TOPIC</span>: <span style=color:#ae81ff>account-events</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>OTEL_EXPORTER_OTLP_ENDPOINT</span>: <span style=color:#e6db74>&#34;otel-collector:4317&#34;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>OTEL_SERVICE_NAME</span>: <span style=color:#e6db74>&#34;account-api&#34;</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>ports</span>:
+</span></span><span style=display:flex><span>      - <span style=color:#e6db74>&#34;8080:8080&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#f92672>event-processor</span>:
+</span></span><span style=display:flex><span>    <span style=color:#f92672>build</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>context</span>: <span style=color:#ae81ff>..</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>dockerfile</span>: <span style=color:#ae81ff>deployments/app/Dockerfile</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>target</span>: <span style=color:#ae81ff>event-app</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>depends_on</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>postgres</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_healthy</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>kafka</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_healthy</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>account-api</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_started</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>otel-collector</span>:
+</span></span><span style=display:flex><span>        <span style=color:#f92672>condition</span>: <span style=color:#ae81ff>service_started</span>
+</span></span><span style=display:flex><span>    <span style=color:#f92672>environment</span>:
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_HOST</span>: <span style=color:#ae81ff>postgres</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_NAME</span>: <span style=color:#ae81ff>eventstore</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_USER</span>: <span style=color:#ae81ff>user</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>DB_PASSWORD</span>: <span style=color:#ae81ff>password</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_BROKERS</span>: <span style=color:#ae81ff>kafka:9092</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_TOPIC</span>: <span style=color:#ae81ff>account-events</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>KAFKA_GROUP_ID</span>: <span style=color:#ae81ff>event-processor-group</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>OTEL_EXPORTER_OTLP_ENDPOINT</span>: <span style=color:#e6db74>&#34;otel-collector:4317&#34;</span>
+</span></span><span style=display:flex><span>      <span style=color:#f92672>OTEL_SERVICE_NAME</span>: <span style=color:#e6db74>&#34;event-processor&#34;</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>  <span style=color:#75715e># ... 모니터링 서비스 생략 ...</span>
+</span></span></code></pre></div><h2 id=개발-과정에서-배운-점>개발 과정에서 배운 점</h2><p>이번 프로젝트를 통해 다음과 같은 점들을 배울 수 있었다:</p><ol><li><p><strong>CQRS와 Event Sourcing 패턴의 실제 적용</strong>: 이론적으로만 알고 있던 패턴들을 실제로 구현해보면서 이해도가 크게 향상됐다.</p></li><li><p><strong>분산 시스템 디버깅</strong>: OpenTelemetry와 Jaeger를 통해 분산 시스템에서의 디버깅이 얼마나 중요한지 깨달았다. 특히 비동기 처리가 많은 이벤트 기반 시스템에서는 추적성이 무엇보다 중요하다.</p></li><li><p><strong>Go와 관련 라이브러리 경험</strong>: Go 언어의 동시성 모델이 이러한 시스템을 구축하는 데 매우 적합하다는 것을 확인했다. 특히 컨텍스트(Context) API를 활용한 취소 및 데드라인 처리가 유용했다.</p></li><li><p><strong>Docker 및 컨테이너 오케스트레이션</strong>: 멀티 스테이지 Dockerfile을 사용하여 이미지 크기를 최적화하고, Docker Compose로 복잡한 의존성을 관리하는 방법을 익혔다.</p></li><li><p><strong>CGO 활용 경험</strong>: librdkafka와 같은 네이티브 라이브러리를 사용하기 위해 CGO를 활성화해야 했고, 이 과정에서 크로스 컴파일 문제 해결 등 여러 도전적인 상황을 경험했다.</p></li></ol><h2 id=향후-개선-사항>향후 개선 사항</h2><p>이 프로젝트는 계속해서 개선해 나갈 예정이다. 주요 개선 계획은 다음과 같다:</p><ol><li><p><strong>테스트 커버리지 향상</strong>: 현재는 기본적인 단위 테스트만 구현되어 있지만, 통합 테스트와 E2E 테스트를 추가할 예정이다.</p></li><li><p><strong>성능 최적화</strong>: 현재 시스템은 기본적인 성능만 갖추고 있으나, 벤치마킹을 통해 병목 지점을 식별하고 최적화할 계획이다.</p></li><li><p><strong>멀티 노드 지원</strong>: Kafka 및 PostgreSQL의 클러스터링을 통해 고가용성을 확보할 예정이다.</p></li><li><p><strong>보안 강화</strong>: 현재는 간단한 인증만 구현되어 있으나, OAuth나 JWT를 활용한 보안 강화가 필요하다.</p></li><li><p><strong>UI 구현</strong>: 관리자용 대시보드 및 사용자용 인터페이스를 React로 구현할 계획이다.</p></li></ol><h2 id=결론>결론</h2><p>이 토이 프로젝트를 통해 현대적인 백엔드 아키텍처와 기술 스택을 실제로 경험해볼 수 있었다. 특히 CQRS와 Event Sourcing 패턴이 실제 프로덕션 환경에서 어떻게 활용될 수 있는지에 대한 인사이트를 얻을 수 있었다.</p><p>비록 간단한 뱅킹 서비스였지만, 이 패턴들이 복잡한 비즈니스 요구사항에도 효과적으로 대응할 수 있다는 것을 확인했다. 더 많은 기능과 최적화를 통해 실제 프로덕션에서도 사용 가능한 수준으로 발전시켜 나갈 예정이다.</p><p>프로젝트 코드는 제 GitHub에서 확인하실 수 있다: [GitHub 저장소 링크]</p></div><div class="row ps-3 pe-3"><div class="col-md-6 share-buttons"><strong>Share on:</strong>
+<a class="btn icon-button bg-facebook" href="https://www.facebook.com/sharer.php?u=https%3a%2f%2fvioletaplum.github.io%2fposts%2fevent-driven-account%2f" target=_blank><i class="fab fa-facebook"></i>
+</a><a class="btn icon-button bg-twitter" href="https://twitter.com/share?url=https%3a%2f%2fvioletaplum.github.io%2fposts%2fevent-driven-account%2f&text=Event-Driven%20%eb%b1%85%ed%82%b9%20%ec%84%9c%eb%b9%84%ec%8a%a4%20%ea%b5%ac%ed%98%84%ed%95%98%ea%b8%b0%3a%20Go%ec%99%80%20CQRS%20%ed%8c%a8%ed%84%b4&via=Violetaplum%27s%20Blog" target=_blank><i class="fab fa-twitter"></i>
+</a><a class="btn icon-button bg-reddit" href="https://reddit.com/submit?url=https%3a%2f%2fvioletaplum.github.io%2fposts%2fevent-driven-account%2f&title=Event-Driven%20%eb%b1%85%ed%82%b9%20%ec%84%9c%eb%b9%84%ec%8a%a4%20%ea%b5%ac%ed%98%84%ed%95%98%ea%b8%b0%3a%20Go%ec%99%80%20CQRS%20%ed%8c%a8%ed%84%b4" target=_blank><i class="fab fa-reddit"></i>
+</a><a class="btn icon-button bg-linkedin" href="https://www.linkedin.com/shareArticle?url=https%3a%2f%2fvioletaplum.github.io%2fposts%2fevent-driven-account%2f&title=Event-Driven%20%eb%b1%85%ed%82%b9%20%ec%84%9c%eb%b9%84%ec%8a%a4%20%ea%b5%ac%ed%98%84%ed%95%98%ea%b8%b0%3a%20Go%ec%99%80%20CQRS%20%ed%8c%a8%ed%84%b4" target=_blank><i class="fab fa-linkedin"></i>
+</a><a class="btn icon-button bg-whatsapp" href="https://api.whatsapp.com/send?text=Event-Driven%20%eb%b1%85%ed%82%b9%20%ec%84%9c%eb%b9%84%ec%8a%a4%20%ea%b5%ac%ed%98%84%ed%95%98%ea%b8%b0%3a%20Go%ec%99%80%20CQRS%20%ed%8c%a8%ed%84%b4 https%3a%2f%2fvioletaplum.github.io%2fposts%2fevent-driven-account%2f" target=_blank><i class="fab fa-whatsapp"></i>
+</a><a class="btn icon-button" href="mailto:?subject=Event-Driven%20%eb%b1%85%ed%82%b9%20%ec%84%9c%eb%b9%84%ec%8a%a4%20%ea%b5%ac%ed%98%84%ed%95%98%ea%b8%b0%3a%20Go%ec%99%80%20CQRS%20%ed%8c%a8%ed%84%b4&body=https%3a%2f%2fvioletaplum.github.io%2fposts%2fevent-driven-account%2f" target=_blank><i class="fas fa-envelope-open-text"></i></a></div><div class="col-md-6 btn-improve-page"><a href=https://github.com/hugo-toha/hugo-toha.github.io/edit/main/content/posts/event-driven-account/index.md title="Improve this page" target=_blank rel=noopener><i class="fas fa-code-branch"></i>
+Improve this page</a></div></div><hr><div class="row next-prev-navigator"><div class="col-md-6 previous-article"><a href=/posts/markdown-sample/ title="Markdown Samples" class="btn filled-button"><div><i class="fas fa-chevron-circle-left"></i> Prev</div><div class=next-prev-text>Markdown Samples</div></a></div><div class="col-md-6 next-article"><a href=/posts/mockgen-mockery/ title="Mockgen vs Mockery" class="btn filled-button"><div>Next <i class="fas fa-chevron-circle-right"></i></div><div class=next-prev-text>Mockgen vs Mockery</div></a></div></div><hr></div></div></div><a id=scroll-to-top class=btn type=button data-bs-toggle=tooltip data-bs-placement=left title="Scroll to top"><i class="fas fa-chevron-circle-up"></i></a></section><section class=toc-section id=toc-section><div class=toc-holder><h5 class="text-center ps-3">Table of Contents</h5><hr><div class=toc><nav id=TableOfContents><ul><li><a href=#소개>소개</a></li><li><a href=#프로젝트-아키텍처>프로젝트 아키텍처</a></li><li><a href=#도메인-설계>도메인 설계</a><ul><li><a href=#account>Account</a></li><li><a href=#transaction>Transaction</a></li><li><a href=#event>Event</a></li></ul></li><li><a href=#cqrs-패턴-구현>CQRS 패턴 구현</a><ul><li><a href=#command-서비스>Command 서비스</a></li><li><a href=#query-서비스>Query 서비스</a></li></ul></li><li><a href=#이벤트-처리-파이프라인>이벤트 처리 파이프라인</a><ul><li><a href=#이벤트-프로듀서>이벤트 프로듀서</a></li><li><a href=#이벤트-컨슈머>이벤트 컨슈머</a></li></ul></li><li><a href=#opentelemetry를-활용한-분산-추적>OpenTelemetry를 활용한 분산 추적</a></li><li><a href=#http-인터페이스>HTTP 인터페이스</a></li><li><a href=#docker-구성>Docker 구성</a><ul><li><a href=#dockerfile>Dockerfile</a></li><li><a href=#docker-compose>Docker Compose</a></li></ul></li><li><a href=#개발-과정에서-배운-점>개발 과정에서 배운 점</a></li><li><a href=#향후-개선-사항>향후 개선 사항</a></li><li><a href=#결론>결론</a></li></ul></nav></div></div></section></div><footer id=footer class="container-fluid text-center align-content-center footer pb-2"><div class="container pt-5"><div class="row text-start"><div class="col-md-4 col-sm-12"><h5>Navigation</h5><ul><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#about>About</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#skills>Skills</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#experiences>Experiences</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#education>Education</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#projects>Projects</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#publications>Publications</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#featured-posts>Featured Posts</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#recent-posts>Recent Posts</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#accomplishments>Accomplishments</a></li><li class=nav-item><a class=smooth-scroll href=https://violetaplum.github.io/#achievements>Achievements</a></li></ul></div><div class="col-md-4 col-sm-12"><h5>Contact me:</h5><ul><li><a href=mailto:violetaplume@gmail.com target=_blank rel=noopener><span><i class="fas fa-envelope"></i></span> <span>violetaplume@gmail.com</span></a></li><li><a href=https://github.com/violetaplum target=_blank rel=noopener><span><i class="fab fa-github"></i></span> <span>violetaplum</span></a></li><li><a href=tel:+0149152532 target=_blank rel=noopener><span><i class="fas fa-phone-alt"></i></span> <span>+0149152532</span></a></li></ul></div></div></div><hr><div class=container><p id=disclaimer><strong>Liability Notice:</strong> This theme is under MIT license. So, you can use it for non-commercial, commercial, or private uses. You can modify or distribute the theme without requiring any permission from the theme author. However, the theme author does not provide any warranty or takes any liability for any issue with the theme.</p></div><hr><div class=container><div class="row text-start"><div class=col-md-4><a id=theme href=https://github.com/hugo-toha/toha target=_blank rel=noopener><img src=/images/theme-logo_hu_b3360284c55cf72d.png alt="Toha Theme Logo">
+Toha</a></div><div class="col-md-4 text-center">© 2020 Copyright.</div><div class="col-md-4 text-end"><a id=hugo href=https://gohugo.io/ target=_blank rel=noopener>Powered by
+<img src=/images/hugo-logo.svg alt="Hugo Logo" height=18></a></div></div></div></footer><script src=/application.79f6ab338689c40f954fc43ca38b3419fbee28d10f3fa978bdd11b707a08c46f.js integrity="sha256-efarM4aJxA+VT8Q8o4s0GfvuKNEPP6l4vdEbcHoIxG8=" defer></script></body></html>
